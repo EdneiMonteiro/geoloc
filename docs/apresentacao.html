@@ -555,7 +555,7 @@
 <span class="hl">              <span class="str">?api-version=1.0</span></span>
 <span class="hl">              <span class="str">&amp;subscription-key={_subscriptionKey}</span></span>
 <span class="hl">              <span class="str">&amp;query={encodedAddress}</span></span>
-<span class="hl">              <span class="str">&amp;limit=1"</span>;</span>
+<span class="hl">              <span class="str">&amp;countrySet=BR&amp;language=pt-BR&amp;limit=1"</span>;</span>
 
     <span class="cm">// Faz a chamada HTTP GET ao Azure Maps</span>
 <span class="hl">    <span class="kw">var</span> <span class="var">response</span> = <span class="kw">await</span> _httpClient.<span class="fn">GetAsync</span>(<span class="var">url</span>);</span>
@@ -588,6 +588,8 @@ GET https://atlas.microsoft.com/search/address/json
     ?api-version=1.0
     &amp;subscription-key=***
     &amp;query=Av.%20Paulista%2C%201000%2C%20São%20Paulo
+    &amp;countrySet=BR
+    &amp;language=pt-BR
     &amp;limit=1
 </pre>
             </div>

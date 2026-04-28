@@ -45,7 +45,7 @@ public class AzureMapsService
         _logger.LogInformation("Geocoding address: {Address}", address);
 
         var encodedAddress = Uri.EscapeDataString(address);
-        var url = $"{BaseUrl}?api-version=1.0&subscription-key={_subscriptionKey}&query={encodedAddress}&limit=1";
+        var url = $"{BaseUrl}?api-version=1.0&subscription-key={_subscriptionKey}&query={encodedAddress}&countrySet=BR&language=pt-BR&limit=1";
 
         var response = await _httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();

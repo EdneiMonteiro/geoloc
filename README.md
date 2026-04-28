@@ -247,7 +247,8 @@ public async Task<GeoCoordinate?> GeocodeAddressAsync(string address)
     var url = $"https://atlas.microsoft.com/search/address/json"
             + $"?api-version=1.0"
             + $"&subscription-key={_subscriptionKey}"
-            + $"&query={encodedAddress}&limit=1";
+            + $"&query={encodedAddress}"
+            + $"&countrySet=BR&language=pt-BR&limit=1";
 
     var response = await _httpClient.GetAsync(url);
     response.EnsureSuccessStatusCode();

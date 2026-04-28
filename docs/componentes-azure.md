@@ -156,7 +156,8 @@ _subscriptionKey = configuration["AzureMapsSubscriptionKey"];
 var url = $"https://atlas.microsoft.com/search/address/json"
         + $"?api-version=1.0"
         + $"&subscription-key={_subscriptionKey}"
-        + $"&query={encodedAddress}&limit=1";
+        + $"&query={encodedAddress}"
+        + $"&countrySet=BR&language=pt-BR&limit=1";
 ```
 
 > **Importante:** A chave deve ser mantida no backend (Azure Functions). Nunca exponha a `subscription-key` no código do app mobile — todas as chamadas ao Azure Maps passam pelo backend.
@@ -298,7 +299,8 @@ public class AzureMapsService
         // 2. Montar request com headers de autenticação
         var url = $"https://atlas.microsoft.com/search/address/json"
                 + $"?api-version=1.0"
-                + $"&query={Uri.EscapeDataString(address)}&limit=1";
+                + $"&query={Uri.EscapeDataString(address)}"
+                + $"&countrySet=BR&language=pt-BR&limit=1";
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("x-ms-client-id", _clientId);
@@ -347,11 +349,36 @@ resource "azurerm_maps_account" "main" {
 > **Nota:** Esta PoC utiliza Shared Key para simplicidade. A migração para Managed Identity é recomendada antes de ir para produção.
 
 ### API: Search Address
+
+A API de geocodificação aceita diversos parâmetros. Para endereços brasileiros, os parâmetros recomendados são:
+
+| Parâmetro | Valor | Obrigatório | Descrição |
+|-----------|-------|:-----------:|-----------|
+| `api-version` | `1.0` | ✅ | Versão da API |
+| `subscription-key` | `{key}` | ✅* | Chave de autenticação (*ou Bearer token com Managed Identity) |
+| `query` | `{endereço}` | ✅ | Endereço a geocodificar (URL encoded) |
+| `countrySet` | `BR` | Recomendado | Restringe resultados ao Brasil — evita geocodificação em outros países com nomes similares |
+| `language` | `pt-BR` | Recomendado | Retorna resultados em português brasileiro |
+| `limit` | `1` | Recomendado | Retorna apenas o melhor resultado |
+
+**Parâmetros opcionais não usados nesta PoC:**
+
+| Parâmetro | Quando usar |
+|-----------|-------------|
+| `lat`/`lon` + `radius` | Para dar viés de posição quando há ambiguidade |
+| `topLeft`/`btmRight` | Para restringir a uma bounding box geográfica |
+| `entityType` | Para filtrar por tipo (Município, Bairro, etc.) |
+| `extendedPostalCodesFor` | Para obter CEPs estendidos no retorno |
+| `view` | Para regiões geopoliticamente disputadas (não se aplica ao Brasil) |
+
+**Request:**
 ```
 GET https://atlas.microsoft.com/search/address/json
     ?api-version=1.0
     &subscription-key={key}
     &query={endereço codificado}
+    &countrySet=BR
+    &language=pt-BR
     &limit=1
 ```
 

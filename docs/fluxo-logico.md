@@ -100,6 +100,8 @@ GET https://atlas.microsoft.com/search/address/json
     ?api-version=1.0
     &subscription-key=***
     &query=Av.%20Paulista%2C%201000%2C%20São%20Paulo...
+    &countrySet=BR
+    &language=pt-BR
     &limit=1
 ```
 10. Azure Maps retorna as coordenadas do endereço:
