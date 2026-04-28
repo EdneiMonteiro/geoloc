@@ -1,0 +1,10 @@
+# Azure environment
+tenant_id           = "<YOUR_AZURE_TENANT_ID>"
+subscription_id     = "<YOUR_AZURE_SUBSCRIPTION_ID>"
+resource_group_name = "rg4geoloc"
+
+# Azure region
+location = "eastus2"
+
+# Project prefix (used for naming resources)
+project_name = "geoloc"

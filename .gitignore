@@ -55,3 +55,27 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/.terraform.lock.hcl
+infra/terraform.tfvars
+infra/tfplan
+
+# .NET (project-specific)
+api/bin/
+api/obj/
+api/publish/
+api/deploy.zip
+api/local.settings.json
+
+# Node / Expo
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,867 @@
+<!--
+  Disclaimer
+  Notice: Any sample scripts, code, or commands comes with the following notification.
+
+  This Sample Code is provided for the purpose of illustration only and is not intended to be used in a production
+  environment. THIS SAMPLE CODE AND ANY RELATED INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+  EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
+  PARTICULAR PURPOSE.
+
+  We grant You a nonexclusive, royalty-free right to use and modify the Sample Code and to reproduce and distribute
+  the object code form of the Sample Code, provided that You agree: (i) to not use Our name, logo, or trademarks to
+  market Your software product in which the Sample Code is embedded; (ii) to include a valid copyright notice on Your
+  software product in which the Sample Code is embedded; and (iii) to indemnify, hold harmless, and defend Us and Our
+  suppliers from and against any claims or lawsuits, including attorneys' fees, that arise or result from the use or
+  distribution of the Sample Code.
+
+  Please note: None of the conditions outlined in the disclaimer above will supersede the terms and conditions
+  contained within the Customers Support Services Description.
+-->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoLoc — Validação de Localização com Azure Maps</title>
+    <style>
+        :root {
+            --azure-blue: #0078D4;
+            --azure-dark: #004578;
+            --success-green: #107C10;
+            --error-red: #D13438;
+            --bg-dark: #1E1E1E;
+            --bg-code: #2D2D2D;
+            --text-light: #F5F5F5;
+            --text-muted: #A0A0A0;
+            --accent: #50E6FF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* ── Slides ── */
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 80px;
+            border-bottom: 3px solid var(--azure-blue);
+            position: relative;
+        }
+
+        .slide-number {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        /* ── Cover ── */
+        .cover {
+            text-align: center;
+            background: linear-gradient(135deg, var(--azure-dark), var(--bg-dark));
+        }
+        .cover h1 {
+            font-size: 64px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .cover h2 {
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+        .cover .badges {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .badge {
+            background: rgba(0, 120, 212, 0.2);
+            border: 1px solid var(--azure-blue);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: var(--accent);
+        }
+
+        /* ── Typography ── */
+        h2 {
+            font-size: 42px;
+            color: var(--accent);
+            margin-bottom: 32px;
+            font-weight: 600;
+        }
+        h3 {
+            font-size: 24px;
+            color: var(--azure-blue);
+            margin: 24px 0 12px;
+        }
+        p, li {
+            font-size: 20px;
+            color: var(--text-light);
+            margin-bottom: 12px;
+        }
+        ul { padding-left: 32px; }
+        li { margin-bottom: 8px; }
+
+        /* ── Architecture Diagram ── */
+        .arch-diagram {
+            background: #252526;
+            border-radius: 16px;
+            padding: 40px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        .arch-row {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+        }
+        .arch-box {
+            background: rgba(0, 120, 212, 0.15);
+            border: 2px solid var(--azure-blue);
+            border-radius: 12px;
+            padding: 20px 28px;
+            min-width: 200px;
+            text-align: center;
+        }
+        .arch-box.green {
+            border-color: var(--success-green);
+            background: rgba(16, 124, 16, 0.15);
+        }
+        .arch-box.accent {
+            border-color: var(--accent);
+            background: rgba(80, 230, 255, 0.1);
+        }
+        .arch-box h4 {
+            font-size: 18px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .arch-box p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        .arrow {
+            font-size: 32px;
+            color: var(--azure-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 8px 0;
+        }
+
+        /* ── Code Blocks ── */
+        .code-section {
+            margin: 24px 0;
+        }
+        .code-label {
+            display: inline-block;
+            background: var(--azure-blue);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 8px 8px 0 0;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .code-highlight-label {
+            display: inline-block;
+            background: var(--error-red);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 8px 8px 0 0;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        pre {
+            background: var(--bg-code);
+            border: 1px solid #444;
+            border-radius: 0 12px 12px 12px;
+            padding: 24px;
+            overflow-x: auto;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+        code {
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+        }
+
+        /* ── Syntax Highlighting ── */
+        .kw { color: #569CD6; }           /* keyword */
+        .tp { color: #4EC9B0; }           /* type */
+        .str { color: #CE9178; }          /* string */
+        .cm { color: #6A9955; }           /* comment */
+        .fn { color: #DCDCAA; }           /* function */
+        .num { color: #B5CEA8; }          /* number */
+        .var { color: #9CDCFE; }          /* variable */
+        .op { color: #D4D4D4; }           /* operator */
+        .hl { background: rgba(255, 255, 0, 0.12); display: block; margin: 0 -24px; padding: 0 24px; border-left: 3px solid #FFD700; }
+
+        /* ── Tables ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        th {
+            background: var(--azure-dark);
+            color: var(--accent);
+            padding: 14px 20px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 20px;
+            border-bottom: 1px solid #333;
+            color: var(--text-light);
+        }
+        tr:hover td {
+            background: rgba(0, 120, 212, 0.08);
+        }
+
+        /* ── Flow Steps ── */
+        .flow-steps {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .flow-step {
+            background: #252526;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid var(--azure-blue);
+        }
+        .flow-step.highlight {
+            border-left-color: var(--accent);
+            background: rgba(80, 230, 255, 0.05);
+        }
+        .flow-step .step-num {
+            display: inline-block;
+            background: var(--azure-blue);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+        .flow-step.highlight .step-num {
+            background: var(--accent);
+            color: var(--bg-dark);
+        }
+        .flow-step h4 {
+            display: inline;
+            font-size: 18px;
+            color: var(--text-light);
+        }
+        .flow-step p {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin: 8px 0 0 36px;
+        }
+
+        /* ── Result Demo ── */
+        .demo-result {
+            display: flex;
+            gap: 32px;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+        .demo-card {
+            flex: 1;
+            min-width: 300px;
+            border-radius: 16px;
+            padding: 28px;
+        }
+        .demo-card.success {
+            background: rgba(16, 124, 16, 0.15);
+            border: 2px solid var(--success-green);
+        }
+        .demo-card.failure {
+            background: rgba(209, 52, 56, 0.15);
+            border: 2px solid var(--error-red);
+        }
+        .demo-card .icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .demo-card h4 {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        .demo-card .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 16px;
+        }
+        .demo-card .metric .label { color: var(--text-muted); }
+        .demo-card .metric .value { font-weight: 600; }
+
+        /* ── Footer ── */
+        .slide-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 80px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .slide { padding: 30px 24px; }
+            .cover h1 { font-size: 36px; }
+            h2 { font-size: 28px; }
+            .flow-steps { grid-template-columns: 1fr; }
+            pre { font-size: 12px; padding: 16px; }
+        }
+
+        @media print {
+            .slide { page-break-after: always; min-height: auto; padding: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 1: Cover -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide cover">
+    <div>
+        <h1>📍 GeoLoc</h1>
+        <h2>Validação de Localização com Azure Maps</h2>
+        <p style="font-size: 18px; color: var(--text-muted); margin-bottom: 40px;">
+            Prova de conceito — Verificação de proximidade geográfica em tempo real
+        </p>
+        <div class="badges">
+            <span class="badge">Azure Maps</span>
+            <span class="badge">Azure Functions</span>
+            <span class="badge">Table Storage</span>
+            <span class="badge">React Native</span>
+            <span class="badge">.NET 8</span>
+            <span class="badge">Terraform</span>
+        </div>
+    </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 2: Problema e Solução -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">01</span>
+    <h2>O Problema</h2>
+    <p style="font-size: 24px; margin-bottom: 32px;">
+        Como verificar se um usuário está <strong style="color: var(--accent);">fisicamente presente</strong>
+        no endereço cadastrado — em tempo real, usando apenas o celular?
+    </p>
+
+    <h3>Solução: GeoLoc</h3>
+    <ul>
+        <li>Usuário <strong>tira uma foto</strong> no app (iPhone)</li>
+        <li>O app captura as <strong>coordenadas GPS</strong> do dispositivo</li>
+        <li>O backend <strong>geocodifica</strong> o endereço cadastrado via <strong>Azure Maps</strong></li>
+        <li>Calcula a <strong>distância</strong> entre as duas coordenadas</li>
+        <li>Retorna se o usuário está <strong>dentro de um raio de 50 metros</strong></li>
+    </ul>
+
+    <h3>Casos de Uso</h3>
+    <ul>
+        <li>Validação de presença em <strong>visitas técnicas</strong></li>
+        <li>Comprovação de <strong>entrega</strong> em endereço cadastrado</li>
+        <li>Confirmação de <strong>ponto de trabalho</strong> remoto</li>
+        <li>Verificação de <strong>endereço residencial</strong> para serviços financeiros</li>
+    </ul>
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 3: Arquitetura -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">02</span>
+    <h2>Arquitetura</h2>
+
+    <div class="arch-diagram">
+        <div class="arch-row">
+            <div class="arch-box accent">
+                <h4>📱 iPhone</h4>
+                <p>React Native / Expo</p>
+                <p>Câmera + GPS</p>
+            </div>
+        </div>
+
+        <div class="arrow">▼ HTTPS POST</div>
+
+        <div class="arch-row">
+            <div class="arch-box">
+                <h4>⚡ Azure Functions</h4>
+                <p>C# .NET 8 — Serverless</p>
+                <p>POST /api/validate-location</p>
+            </div>
+        </div>
+
+        <div class="arrow" style="display: flex; gap: 200px;">
+            <span>▼ SDK</span>
+            <span>▼ REST</span>
+        </div>
+
+        <div class="arch-row">
+            <div class="arch-box green">
+                <h4>🗄️ Table Storage</h4>
+                <p>Endereços cadastrados</p>
+                <p>UserAddresses</p>
+            </div>
+            <div class="arch-box">
+                <h4>🗺️ Azure Maps</h4>
+                <p>Geocodificação</p>
+                <p>Endereço → Coordenadas</p>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <tr>
+            <th>Componente</th>
+            <th>Tecnologia</th>
+            <th>Função</th>
+        </tr>
+        <tr>
+            <td>Mobile</td>
+            <td>React Native / Expo / TypeScript</td>
+            <td>Interface, câmera, GPS</td>
+        </tr>
+        <tr>
+            <td>Backend</td>
+            <td>Azure Functions / .NET 8 Isolated</td>
+            <td>Orquestração, cálculo de distância</td>
+        </tr>
+        <tr>
+            <td>Dados</td>
+            <td>Azure Table Storage</td>
+            <td>Endereços dos usuários</td>
+        </tr>
+        <tr>
+            <td>Geocodificação</td>
+            <td>Azure Maps Search API</td>
+            <td>Endereço textual → lat/lng</td>
+        </tr>
+        <tr>
+            <td>Infraestrutura</td>
+            <td>Terraform</td>
+            <td>Provisioning automatizado</td>
+        </tr>
+    </table>
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 4: Fluxo Lógico -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">03</span>
+    <h2>Fluxo Lógico</h2>
+
+    <div class="flow-steps">
+        <div class="flow-step">
+            <span class="step-num">1</span>
+            <h4>Identificação</h4>
+            <p>Usuário informa seu ID no app</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">2</span>
+            <h4>Captura de Foto</h4>
+            <p>Abre a câmera nativa do iPhone</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">3</span>
+            <h4>Coordenadas GPS</h4>
+            <p>Captura lat/lng do dispositivo com alta precisão</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">4</span>
+            <h4>Envio ao Backend</h4>
+            <p>POST com userId + coordenadas para Azure Function</p>
+        </div>
+        <div class="flow-step highlight">
+            <span class="step-num">5</span>
+            <h4>Consulta Endereço</h4>
+            <p>Busca endereço cadastrado na Table Storage</p>
+        </div>
+        <div class="flow-step highlight">
+            <span class="step-num">6</span>
+            <h4>Geocodificação</h4>
+            <p>Azure Maps converte endereço → coordenadas</p>
+        </div>
+        <div class="flow-step highlight">
+            <span class="step-num">7</span>
+            <h4>Cálculo de Distância</h4>
+            <p>Fórmula de Haversine (distância geodésica)</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">8</span>
+            <h4>Resultado</h4>
+            <p>Retorna se está dentro/fora do raio de 50m</p>
+        </div>
+    </div>
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 5: Azure Maps — Chamada de API -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">04</span>
+    <h2>🗺️ Azure Maps — Geocodificação</h2>
+
+    <p>O serviço <strong>Azure Maps Search Address API</strong> converte um endereço textual em coordenadas geográficas (latitude/longitude). Esta é a chamada central da solução.</p>
+
+    <div class="code-section">
+        <span class="code-highlight-label">📂 api/Services/AzureMapsService.cs — CHAMADA AO AZURE MAPS</span>
+<pre>
+<span class="kw">public</span> <span class="kw">async</span> <span class="tp">Task</span>&lt;<span class="tp">GeoCoordinate</span>?&gt; <span class="fn">GeocodeAddressAsync</span>(<span class="kw">string</span> <span class="var">address</span>)
+{
+    _logger.<span class="fn">LogInformation</span>(<span class="str">"Geocoding address: {Address}"</span>, <span class="var">address</span>);
+
+<span class="hl">    <span class="cm">// Monta a URL da Azure Maps Search Address API</span></span>
+<span class="hl">    <span class="kw">var</span> <span class="var">encodedAddress</span> = <span class="tp">Uri</span>.<span class="fn">EscapeDataString</span>(<span class="var">address</span>);</span>
+<span class="hl">    <span class="kw">var</span> <span class="var">url</span> = <span class="str">$"https://atlas.microsoft.com/search/address/json</span></span>
+<span class="hl">              <span class="str">?api-version=1.0</span></span>
+<span class="hl">              <span class="str">&amp;subscription-key={_subscriptionKey}</span></span>
+<span class="hl">              <span class="str">&amp;query={encodedAddress}</span></span>
+<span class="hl">              <span class="str">&amp;limit=1"</span>;</span>
+
+    <span class="cm">// Faz a chamada HTTP GET ao Azure Maps</span>
+<span class="hl">    <span class="kw">var</span> <span class="var">response</span> = <span class="kw">await</span> _httpClient.<span class="fn">GetAsync</span>(<span class="var">url</span>);</span>
+<span class="hl">    <span class="var">response</span>.<span class="fn">EnsureSuccessStatusCode</span>();</span>
+
+    <span class="cm">// Parseia o JSON de resposta</span>
+    <span class="kw">var</span> <span class="var">json</span> = <span class="kw">await</span> <span class="var">response</span>.Content.<span class="fn">ReadFromJsonAsync</span>&lt;<span class="tp">JsonElement</span>&gt;();
+
+    <span class="kw">var</span> <span class="var">results</span> = <span class="var">json</span>.<span class="fn">GetProperty</span>(<span class="str">"results"</span>);
+    <span class="kw">if</span> (<span class="var">results</span>.<span class="fn">GetArrayLength</span>() == <span class="num">0</span>)
+        <span class="kw">return</span> <span class="kw">null</span>;
+
+<span class="hl">    <span class="cm">// Extrai as coordenadas do primeiro resultado</span></span>
+<span class="hl">    <span class="kw">var</span> <span class="var">position</span> = <span class="var">results</span>[<span class="num">0</span>].<span class="fn">GetProperty</span>(<span class="str">"position"</span>);</span>
+<span class="hl">    <span class="kw">var</span> <span class="var">lat</span> = <span class="var">position</span>.<span class="fn">GetProperty</span>(<span class="str">"lat"</span>).<span class="fn">GetDouble</span>();</span>
+<span class="hl">    <span class="kw">var</span> <span class="var">lng</span> = <span class="var">position</span>.<span class="fn">GetProperty</span>(<span class="str">"lon"</span>).<span class="fn">GetDouble</span>();</span>
+
+    <span class="kw">return new</span> <span class="tp">GeoCoordinate</span> { Latitude = <span class="var">lat</span>, Longitude = <span class="var">lng</span> };
+}
+</pre>
+    </div>
+
+    <h3>API Request / Response</h3>
+    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 300px;">
+            <div class="code-section">
+                <span class="code-label">REQUEST</span>
+<pre>
+GET https://atlas.microsoft.com/search/address/json
+    ?api-version=1.0
+    &amp;subscription-key=***
+    &amp;query=Av.%20Paulista%2C%201000%2C%20São%20Paulo
+    &amp;limit=1
+</pre>
+            </div>
+        </div>
+        <div style="flex: 1; min-width: 300px;">
+            <div class="code-section">
+                <span class="code-label">RESPONSE (simplificado)</span>
+<pre>
+{
+  <span class="str">"results"</span>: [{
+    <span class="str">"position"</span>: {
+<span class="hl">      <span class="str">"lat"</span>: <span class="num">-23.5650242</span>,</span>
+<span class="hl">      <span class="str">"lon"</span>: <span class="num">-46.6519791</span></span>
+    },
+    <span class="str">"address"</span>: {
+      <span class="str">"freeformAddress"</span>: <span class="str">"Avenida Paulista, 1000"</span>
+    }
+  }]
+}
+</pre>
+            </div>
+        </div>
+    </div>
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 6: Validação de Raio — Haversine -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">05</span>
+    <h2>📐 Validação de Raio — Fórmula de Haversine</h2>
+
+    <p>
+        A <strong>fórmula de Haversine</strong> calcula a distância entre dois pontos na superfície
+        de uma esfera (a Terra), considerando sua curvatura. É o padrão para cálculos de distância
+        geográfica com coordenadas GPS.
+    </p>
+
+    <div class="code-section">
+        <span class="code-highlight-label">📂 api/Services/GeoCalculationService.cs — CÁLCULO DE DISTÂNCIA</span>
+<pre>
+<span class="kw">public class</span> <span class="tp">GeoCalculationService</span>
+{
+<span class="hl">    <span class="kw">private const double</span> <span class="var">EarthRadiusMeters</span> = <span class="num">6_371_000</span>;  <span class="cm">// Raio médio da Terra</span></span>
+
+    <span class="cm">/// Calcula a distância em metros entre duas coordenadas geográficas</span>
+    <span class="cm">/// usando a fórmula de Haversine.</span>
+    <span class="kw">public double</span> <span class="fn">CalculateDistanceMeters</span>(
+        <span class="kw">double</span> <span class="var">lat1</span>, <span class="kw">double</span> <span class="var">lon1</span>,   <span class="cm">// Coordenadas do dispositivo (GPS)</span>
+        <span class="kw">double</span> <span class="var">lat2</span>, <span class="kw">double</span> <span class="var">lon2</span>)   <span class="cm">// Coordenadas do endereço (Azure Maps)</span>
+    {
+<span class="hl">        <span class="kw">var</span> <span class="var">dLat</span> = <span class="fn">DegreesToRadians</span>(<span class="var">lat2</span> - <span class="var">lat1</span>);</span>
+<span class="hl">        <span class="kw">var</span> <span class="var">dLon</span> = <span class="fn">DegreesToRadians</span>(<span class="var">lon2</span> - <span class="var">lon1</span>);</span>
+<span class="hl"></span>
+<span class="hl">        <span class="kw">var</span> <span class="var">a</span> = <span class="tp">Math</span>.<span class="fn">Sin</span>(<span class="var">dLat</span> / <span class="num">2</span>) * <span class="tp">Math</span>.<span class="fn">Sin</span>(<span class="var">dLat</span> / <span class="num">2</span>) +</span>
+<span class="hl">                <span class="tp">Math</span>.<span class="fn">Cos</span>(<span class="fn">DegreesToRadians</span>(<span class="var">lat1</span>)) * <span class="tp">Math</span>.<span class="fn">Cos</span>(<span class="fn">DegreesToRadians</span>(<span class="var">lat2</span>)) *</span>
+<span class="hl">                <span class="tp">Math</span>.<span class="fn">Sin</span>(<span class="var">dLon</span> / <span class="num">2</span>) * <span class="tp">Math</span>.<span class="fn">Sin</span>(<span class="var">dLon</span> / <span class="num">2</span>);</span>
+<span class="hl"></span>
+<span class="hl">        <span class="kw">var</span> <span class="var">c</span> = <span class="num">2</span> * <span class="tp">Math</span>.<span class="fn">Atan2</span>(<span class="tp">Math</span>.<span class="fn">Sqrt</span>(<span class="var">a</span>), <span class="tp">Math</span>.<span class="fn">Sqrt</span>(<span class="num">1</span> - <span class="var">a</span>));</span>
+<span class="hl"></span>
+<span class="hl">        <span class="kw">return</span> <span class="var">EarthRadiusMeters</span> * <span class="var">c</span>;  <span class="cm">// Distância em metros</span></span>
+    }
+}
+</pre>
+    </div>
+
+    <h3>Como é usado na Function</h3>
+    <div class="code-section">
+        <span class="code-highlight-label">📂 api/Functions/ValidateLocationFunction.cs — VALIDAÇÃO DO RAIO</span>
+<pre>
+<span class="cm">// 4. Calcula distância entre GPS do dispositivo e endereço geocodificado</span>
+<span class="kw">var</span> <span class="var">distanceMeters</span> = _geoCalc.<span class="fn">CalculateDistanceMeters</span>(
+    <span class="var">validationRequest</span>.Latitude, <span class="var">validationRequest</span>.Longitude,   <span class="cm">// GPS do iPhone</span>
+    <span class="var">addressCoords</span>.Latitude, <span class="var">addressCoords</span>.Longitude);          <span class="cm">// Azure Maps</span>
+
+<span class="hl"><span class="cm">// 5. Verifica se está dentro do raio de 50 metros</span></span>
+<span class="hl"><span class="kw">var</span> <span class="var">isWithin</span> = <span class="var">distanceMeters</span> &lt;= <span class="num">50.0</span>;  <span class="cm">// RadiusMeters = 50</span></span>
+</pre>
+    </div>
+
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 7: Resultado da Demo -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">06</span>
+    <h2>Resultado da Demo</h2>
+
+    <p>Testes reais executados com o endpoint <code>POST /api/validate-location</code>:</p>
+
+    <div class="demo-result">
+        <div class="demo-card success">
+            <div class="icon">✅</div>
+            <h4 style="color: #34A853;">Dentro do raio</h4>
+            <div class="metric">
+                <span class="label">Distância</span>
+                <span class="value" style="color: #34A853;">3.43 metros</span>
+            </div>
+            <div class="metric">
+                <span class="label">Raio permitido</span>
+                <span class="value">50 metros</span>
+            </div>
+            <div class="metric">
+                <span class="label">Endereço</span>
+                <span class="value">Av. Paulista, 1000</span>
+            </div>
+            <div class="metric">
+                <span class="label">GPS dispositivo</span>
+                <span class="value" style="font-family: monospace; font-size: 14px;">-23.5650, -46.6520</span>
+            </div>
+            <div class="metric">
+                <span class="label">GPS endereço</span>
+                <span class="value" style="font-family: monospace; font-size: 14px;">-23.5650, -46.6520</span>
+            </div>
+        </div>
+
+        <div class="demo-card failure">
+            <div class="icon">❌</div>
+            <h4 style="color: var(--error-red);">Fora do raio</h4>
+            <div class="metric">
+                <span class="label">Distância</span>
+                <span class="value" style="color: var(--error-red);">872.333 metros</span>
+            </div>
+            <div class="metric">
+                <span class="label">Raio permitido</span>
+                <span class="value">50 metros</span>
+            </div>
+            <div class="metric">
+                <span class="label">Endereço</span>
+                <span class="value">Av. Paulista, 1000</span>
+            </div>
+            <div class="metric">
+                <span class="label">GPS dispositivo</span>
+                <span class="value" style="font-family: monospace; font-size: 14px;">-15.8317, -48.0548</span>
+            </div>
+            <div class="metric">
+                <span class="label">GPS endereço</span>
+                <span class="value" style="font-family: monospace; font-size: 14px;">-23.5650, -46.6520</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="code-section">
+        <span class="code-label">RESPONSE JSON (dentro do raio)</span>
+<pre>
+{
+  <span class="str">"isWithinRadius"</span>: <span class="kw">true</span>,
+  <span class="str">"distanceMeters"</span>: <span class="num">3.43</span>,
+  <span class="str">"radiusMeters"</span>: <span class="num">50</span>,
+  <span class="str">"registeredAddress"</span>: <span class="str">"Av. Paulista, 1000, São Paulo, SP, 01310-100, Brazil"</span>,
+  <span class="str">"deviceCoordinates"</span>: { <span class="str">"latitude"</span>: <span class="num">-23.5650</span>, <span class="str">"longitude"</span>: <span class="num">-46.6520</span> },
+  <span class="str">"addressCoordinates"</span>: { <span class="str">"latitude"</span>: <span class="num">-23.5650242</span>, <span class="str">"longitude"</span>: <span class="num">-46.6519791</span> }
+}
+</pre>
+    </div>
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 8: Componentes Azure + Custos -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">07</span>
+    <h2>Componentes Azure</h2>
+
+    <table>
+        <tr>
+            <th>Recurso</th>
+            <th>SKU / Plano</th>
+            <th>Função</th>
+            <th>Custo (demo)</th>
+        </tr>
+        <tr>
+            <td>🗂️ Resource Group</td>
+            <td>—</td>
+            <td>Container lógico para todos os recursos</td>
+            <td>Grátis</td>
+        </tr>
+        <tr>
+            <td>🗄️ Storage Account</td>
+            <td>Standard LRS</td>
+            <td>Table Storage com endereços cadastrados</td>
+            <td>~$0.01/mês</td>
+        </tr>
+        <tr>
+            <td>🗺️ Azure Maps</td>
+            <td>Gen2</td>
+            <td>Geocodificação (endereço → coordenadas)</td>
+            <td>Grátis até 5K req/mês<br><small style="color: var(--text-muted);">Depois: $4.50 / 1.000 req</small></td>
+        </tr>
+        <tr>
+            <td>⚡ Function App</td>
+            <td>Consumption (Y1)</td>
+            <td>Backend serverless — endpoint de validação</td>
+            <td>Grátis (até 1M exec/mês)</td>
+        </tr>
+    </table>
+
+    <div style="background: rgba(16, 124, 16, 0.15); border: 1px solid var(--success-green); border-radius: 12px; padding: 20px; margin-top: 24px; text-align: center;">
+        <p style="font-size: 28px; margin: 0;">
+            💰 Custo total estimado: <strong style="color: var(--success-green);">&lt; $0.05/mês</strong>
+        </p>
+        <p style="font-size: 16px; color: var(--text-muted); margin: 8px 0 0;">
+            Infraestrutura 100% provisionada via Terraform — reprodutível e versionável
+        </p>
+    </div>
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 9: Próximos Passos -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">08</span>
+    <h2>Próximos Passos</h2>
+
+    <div class="flow-steps">
+        <div class="flow-step">
+            <span class="step-num">1</span>
+            <h4>Autenticação</h4>
+            <p>Azure AD / Entra ID para login seguro no app</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">2</span>
+            <h4>Cache de Geocodificação</h4>
+            <p>Salvar coordenadas na Table Storage para evitar chamadas repetidas ao Azure Maps</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">3</span>
+            <h4>Mapa Visual</h4>
+            <p>Exibir as duas coordenadas em um mapa interativo no app (react-native-maps)</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">4</span>
+            <h4>Tela de Cadastro</h4>
+            <p>Permitir que o usuário cadastre/atualize seu endereço pelo app</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">5</span>
+            <h4>Histórico</h4>
+            <p>Registrar cada validação com timestamp, foto e resultado para auditoria</p>
+        </div>
+        <div class="flow-step">
+            <span class="step-num">6</span>
+            <h4>Raio Configurável</h4>
+            <p>Permitir diferentes raios por tipo de validação (50m, 100m, 500m)</p>
+        </div>
+    </div>
+
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 10: Obrigado -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide cover" style="border-bottom: none;">
+    <div>
+        <h1>📍 GeoLoc</h1>
+        <h2>Obrigado</h2>
+        <p style="font-size: 20px; color: var(--text-muted);">
+            Validação de localização com Azure Maps — Prova de Conceito
+        </p>
+        <div class="badges" style="margin-top: 32px;">
+            <span class="badge">Azure Maps</span>
+            <span class="badge">Azure Functions</span>
+            <span class="badge">Table Storage</span>
+            <span class="badge">React Native</span>
+            <span class="badge">Terraform</span>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>
