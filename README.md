@@ -45,6 +45,65 @@ iPhone (React Native / Expo)
 | **Azure Maps Account** | Geocodifica endereço textual → coordenadas (lat/lng) |
 | **Azure Functions** (Consumption, .NET 8) | Backend serverless — endpoint `POST /api/validate-location` |
 
+## Autenticação do Azure Maps
+
+O Azure Maps suporta dois métodos de autenticação. Esta PoC usa **Shared Key** por simplicidade:
+
+| Método | Usado nesta PoC | Recomendado para produção |
+|--------|:-:|:-:|
+| **Shared Key** (`subscription-key` na URL) | ✅ | |
+| **Managed Identity** (Bearer token via Entra ID) | | ✅ |
+
+### Shared Key (usado nesta PoC)
+
+1. Criar o Azure Maps Account (Portal, CLI ou Terraform)
+2. Obter a **Primary Key** em: Azure Maps → Authentication → Shared Key Authentication
+3. Configurar como variável de ambiente `AzureMapsSubscriptionKey`
+4. A chave é passada como `subscription-key` na URL da API
+
+```bash
+# Obter a chave via CLI
+az maps account keys list --name geoloc-maps --resource-group rg4geoloc --query primaryKey -o tsv
+```
+
+### Managed Identity (recomendado para produção)
+
+Elimina chaves estáticas — a Function App usa seu próprio token OAuth gerenciado pelo Azure:
+
+1. **Habilitar** Managed Identity na Function App:
+   ```bash
+   az functionapp identity assign --name <function_app> --resource-group rg4geoloc
+   ```
+
+2. **Atribuir role** `Azure Maps Data Reader` à Managed Identity:
+   ```bash
+   PRINCIPAL_ID=$(az functionapp identity show --name <function_app> --resource-group rg4geoloc --query principalId -o tsv)
+   MAPS_ID=$(az maps account show --name geoloc-maps --resource-group rg4geoloc --query id -o tsv)
+   az role assignment create --assignee "$PRINCIPAL_ID" --role "Azure Maps Data Reader" --scope "$MAPS_ID"
+   ```
+
+3. **Obter Client ID** do Azure Maps:
+   ```bash
+   az maps account show --name geoloc-maps --resource-group rg4geoloc --query properties.uniqueId -o tsv
+   ```
+
+4. **No código**, usar `DefaultAzureCredential` e enviar `x-ms-client-id` + `Authorization: Bearer {token}` em vez de `subscription-key`
+
+5. **(Opcional)** Desabilitar Shared Key:
+   ```bash
+   az maps account update --name geoloc-maps --resource-group rg4geoloc --disable-local-auth true
+   ```
+
+**Roles RBAC disponíveis:**
+
+| Role | Permissão |
+|------|-----------|
+| `Azure Maps Data Reader` | Somente leitura — **recomendado para geocodificação** |
+| `Azure Maps Search and Render Data Reader` | Apenas Search + Render |
+| `Azure Maps Data Contributor` | Leitura + escrita + exclusão |
+
+> Documentação detalhada com exemplos de código: [docs/componentes-azure.md](docs/componentes-azure.md)
+
 ## Pré-requisitos
 
 - **Azure CLI** instalado e autenticado (`az login`)

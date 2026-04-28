@@ -161,6 +161,191 @@ var url = $"https://atlas.microsoft.com/search/address/json"
 
 > **Importante:** A chave deve ser mantida no backend (Azure Functions). Nunca exponha a `subscription-key` no código do app mobile — todas as chamadas ao Azure Maps passam pelo backend.
 
+### Autenticação via Managed Identity (recomendado para produção)
+
+Em produção, o recomendado é substituir a Shared Key por **Managed Identity + Microsoft Entra ID**, eliminando chaves estáticas do código e configurações.
+
+#### Por que usar Managed Identity?
+
+| Aspecto | Shared Key | Managed Identity |
+|---------|-----------|-----------------|
+| **Segurança** | Chave estática que pode vazar | Sem chaves — token gerenciado pelo Azure |
+| **Rotação** | Manual (regenerar + redistribuir) | Automática (tokens de curta duração) |
+| **Auditoria** | Difícil rastrear quem usou | Integrada com Azure AD logs |
+| **Revogação** | Requer regenerar a chave (afeta todos) | Revoga por role assignment individual |
+
+#### Passo 1: Habilitar System-Assigned Managed Identity na Function App
+
+**Via Portal Azure:**
+1. Acesse a **Function App** no Portal Azure
+2. Menu lateral → **Identity**
+3. Na aba **System assigned**, defina **Status = On**
+4. Clique em **Save** e confirme
+
+**Via Azure CLI:**
+```bash
+az functionapp identity assign \
+    --name geoloc-func-XXXXXX \
+    --resource-group rg4geoloc
+```
+
+**Via Terraform:**
+```hcl
+resource "azurerm_linux_function_app" "main" {
+  # ... outras propriedades ...
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+```
+
+O comando/configuração retorna o `principalId` da identidade gerenciada — anote esse valor.
+
+#### Passo 2: Atribuir a role `Azure Maps Data Reader` à Managed Identity
+
+A Managed Identity precisa de permissão para acessar o Azure Maps. As roles disponíveis são:
+
+| Role | Permissão | Quando usar |
+|------|-----------|-------------|
+| **Azure Maps Data Reader** | Acesso somente leitura às APIs REST | **Recomendado para esta PoC** — geocodificação é leitura |
+| **Azure Maps Search and Render Data Reader** | Acesso somente a Search e Render | Alternativa mais restritiva |
+| **Azure Maps Data Contributor** | Leitura + escrita + exclusão | Apenas se precisar criar/editar dados |
+
+**Via Portal Azure:**
+1. Acesse o recurso **Azure Maps** no Portal
+2. Menu lateral → **Access control (IAM)**
+3. Clique em **+ Add** → **Add role assignment**
+4. Selecione a role: **Azure Maps Data Reader**
+5. Em **Members**, selecione **Managed identity**
+6. Clique em **+ Select members** → selecione a Function App
+7. Clique em **Review + assign**
+
+**Via Azure CLI:**
+```bash
+# Obter o principalId da Function App
+PRINCIPAL_ID=$(az functionapp identity show \
+    --name geoloc-func-XXXXXX \
+    --resource-group rg4geoloc \
+    --query principalId -o tsv)
+
+# Obter o Resource ID do Azure Maps
+MAPS_ID=$(az maps account show \
+    --name geoloc-maps \
+    --resource-group rg4geoloc \
+    --query id -o tsv)
+
+# Atribuir a role
+az role assignment create \
+    --assignee "$PRINCIPAL_ID" \
+    --role "Azure Maps Data Reader" \
+    --scope "$MAPS_ID"
+```
+
+**Via Terraform:**
+```hcl
+resource "azurerm_role_assignment" "maps_reader" {
+  scope                = azurerm_maps_account.main.id
+  role_definition_name = "Azure Maps Data Reader"
+  principal_id         = azurerm_linux_function_app.main.identity[0].principal_id
+}
+```
+
+#### Passo 3: Obter o Client ID do Azure Maps
+
+O Client ID (também chamado `x-ms-client-id`) é um GUID único da conta Azure Maps, diferente da subscription key. É necessário para autenticação via Entra ID.
+
+**Via Portal Azure:**
+1. Acesse o recurso **Azure Maps** → **Authentication**
+2. Copie o **Client ID** exibido na seção Microsoft Entra ID
+
+**Via Azure CLI:**
+```bash
+az maps account show \
+    --name geoloc-maps \
+    --resource-group rg4geoloc \
+    --query properties.uniqueId -o tsv
+```
+
+#### Passo 4: Alterar o código para usar Managed Identity
+
+Em vez de passar `subscription-key` na URL, o código passa um **Bearer token** no header `Authorization` e o **Client ID** no header `x-ms-client-id`:
+
+```csharp
+// Exemplo conceitual — NÃO implementado nesta PoC
+
+using Azure.Identity;
+
+public class AzureMapsService
+{
+    private readonly HttpClient _httpClient;
+    private readonly string _clientId; // Client ID do Azure Maps (x-ms-client-id)
+
+    public AzureMapsService(HttpClient httpClient, IConfiguration configuration)
+    {
+        _httpClient = httpClient;
+        _clientId = configuration["AzureMapsClientId"];
+    }
+
+    public async Task<GeoCoordinate?> GeocodeAddressAsync(string address)
+    {
+        // 1. Obter token via Managed Identity
+        var credential = new DefaultAzureCredential();
+        var token = await credential.GetTokenAsync(
+            new Azure.Core.TokenRequestContext(
+                new[] { "https://atlas.microsoft.com/.default" }));
+
+        // 2. Montar request com headers de autenticação
+        var url = $"https://atlas.microsoft.com/search/address/json"
+                + $"?api-version=1.0"
+                + $"&query={Uri.EscapeDataString(address)}&limit=1";
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("x-ms-client-id", _clientId);
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Token);
+
+        // 3. Enviar request
+        var response = await _httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        // ... parsear resposta (igual ao código atual)
+    }
+}
+```
+
+**App Settings necessárias (em vez de `AzureMapsSubscriptionKey`):**
+```json
+{
+  "AzureMapsClientId": "<CLIENT_ID_DO_AZURE_MAPS>"
+}
+```
+
+#### Passo 5 (opcional): Desabilitar autenticação por Shared Key
+
+Após migrar para Managed Identity, desabilite a autenticação por chave para máxima segurança:
+
+**Via Azure CLI:**
+```bash
+az maps account update \
+    --name geoloc-maps \
+    --resource-group rg4geoloc \
+    --disable-local-auth true
+```
+
+**Via Terraform:**
+```hcl
+resource "azurerm_maps_account" "main" {
+  name                  = "geoloc-maps"
+  resource_group_name   = azurerm_resource_group.main.name
+  location              = "global"
+  sku_name              = "G2"
+  local_auth_enabled    = false
+}
+```
+
+> **Nota:** Esta PoC utiliza Shared Key para simplicidade. A migração para Managed Identity é recomendada antes de ir para produção.
+
 ### API: Search Address
 ```
 GET https://atlas.microsoft.com/search/address/json

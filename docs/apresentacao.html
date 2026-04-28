@@ -615,10 +615,119 @@ GET https://atlas.microsoft.com/search/address/json
 </section>
 
 <!-- ════════════════════════════════════════════════════════════ -->
-<!-- SLIDE 6: Validação de Raio — Haversine -->
+<!-- SLIDE 5.5: Autenticação do Azure Maps -->
 <!-- ════════════════════════════════════════════════════════════ -->
 <section class="slide">
     <span class="slide-number">05</span>
+    <h2>🔐 Autenticação do Azure Maps</h2>
+
+    <p>O Azure Maps suporta dois métodos de autenticação. Esta PoC usa <strong>Shared Key</strong> por simplicidade.
+    Para produção, recomenda-se <strong>Managed Identity</strong>.</p>
+
+    <div style="display: flex; gap: 24px; flex-wrap: wrap; margin: 24px 0;">
+        <div style="flex: 1; min-width: 300px; background: rgba(80, 230, 255, 0.08); border: 1px solid var(--accent); border-radius: 12px; padding: 24px;">
+            <h3 style="color: var(--accent); margin-top: 0;">🔑 Shared Key (esta PoC)</h3>
+            <ul style="font-size: 16px;">
+                <li>Chave estática (<code>subscription-key</code>)</li>
+                <li>Passada como parâmetro na URL</li>
+                <li>Simples de configurar</li>
+                <li>Rotação manual</li>
+            </ul>
+            <div class="code-section">
+                <span class="code-label">REQUEST</span>
+<pre style="font-size: 13px;">
+GET /search/address/json
+    ?<span class="str">subscription-key={CHAVE}</span>
+    &amp;query=Av. Paulista, 1000
+</pre>
+            </div>
+        </div>
+
+        <div style="flex: 1; min-width: 300px; background: rgba(16, 124, 16, 0.1); border: 1px solid var(--success-green); border-radius: 12px; padding: 24px;">
+            <h3 style="color: var(--success-green); margin-top: 0;">🛡️ Managed Identity (produção)</h3>
+            <ul style="font-size: 16px;">
+                <li>Sem chaves — token OAuth gerenciado pelo Azure</li>
+                <li>Bearer token no header <code>Authorization</code></li>
+                <li>Rotação automática</li>
+                <li>Auditável via Azure AD logs</li>
+            </ul>
+            <div class="code-section">
+                <span class="code-label">REQUEST</span>
+<pre style="font-size: 13px;">
+GET /search/address/json?query=Av. Paulista
+<span class="str">x-ms-client-id: {CLIENT_ID}</span>
+<span class="str">Authorization: Bearer {TOKEN}</span>
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <h3>Setup da Managed Identity (5 passos)</h3>
+    <table style="font-size: 16px;">
+        <tr>
+            <th style="width: 40px;">#</th>
+            <th>Passo</th>
+            <th>Comando CLI</th>
+        </tr>
+        <tr>
+            <td><strong>1</strong></td>
+            <td>Habilitar Managed Identity na Function App</td>
+            <td><code>az functionapp identity assign --name {func}</code></td>
+        </tr>
+        <tr>
+            <td><strong>2</strong></td>
+            <td>Atribuir role <strong>Azure Maps Data Reader</strong></td>
+            <td><code>az role assignment create --role "Azure Maps Data Reader"</code></td>
+        </tr>
+        <tr>
+            <td><strong>3</strong></td>
+            <td>Obter Client ID do Azure Maps</td>
+            <td><code>az maps account show --query properties.uniqueId</code></td>
+        </tr>
+        <tr>
+            <td><strong>4</strong></td>
+            <td>Usar <code>DefaultAzureCredential</code> no código</td>
+            <td>Substituir <code>subscription-key</code> por <code>Bearer token</code></td>
+        </tr>
+        <tr>
+            <td><strong>5</strong></td>
+            <td>Desabilitar Shared Key (opcional)</td>
+            <td><code>az maps account update --disable-local-auth true</code></td>
+        </tr>
+    </table>
+
+    <h3 style="margin-top: 20px;">Roles RBAC disponíveis</h3>
+    <table style="font-size: 16px;">
+        <tr>
+            <th>Role</th>
+            <th>Permissão</th>
+            <th>Uso</th>
+        </tr>
+        <tr>
+            <td><strong>Azure Maps Data Reader</strong></td>
+            <td>Somente leitura (Search, Render, Route...)</td>
+            <td style="color: var(--success-green);">✅ Recomendado para esta PoC</td>
+        </tr>
+        <tr>
+            <td>Azure Maps Search and Render Data Reader</td>
+            <td>Apenas Search + Render</td>
+            <td>Alternativa mais restritiva</td>
+        </tr>
+        <tr>
+            <td>Azure Maps Data Contributor</td>
+            <td>Leitura + escrita + exclusão</td>
+            <td>Apenas se criar/editar dados</td>
+        </tr>
+    </table>
+
+    <span class="slide-footer">GeoLoc — Prova de Conceito</span>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 6: Validação de Raio — Haversine -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<section class="slide">
+    <span class="slide-number">06</span>
     <h2>📐 Validação de Raio — Fórmula de Haversine</h2>
 
     <p>
@@ -676,7 +785,7 @@ GET https://atlas.microsoft.com/search/address/json
 <!-- SLIDE 7: Resultado da Demo -->
 <!-- ════════════════════════════════════════════════════════════ -->
 <section class="slide">
-    <span class="slide-number">06</span>
+    <span class="slide-number">07</span>
     <h2>Resultado da Demo</h2>
 
     <p>Testes reais executados com o endpoint <code>POST /api/validate-location</code>:</p>
@@ -753,7 +862,7 @@ GET https://atlas.microsoft.com/search/address/json
 <!-- SLIDE 8: Componentes Azure + Custos -->
 <!-- ════════════════════════════════════════════════════════════ -->
 <section class="slide">
-    <span class="slide-number">07</span>
+    <span class="slide-number">08</span>
     <h2>Componentes Azure</h2>
 
     <table>
@@ -804,7 +913,7 @@ GET https://atlas.microsoft.com/search/address/json
 <!-- SLIDE 9: Próximos Passos -->
 <!-- ════════════════════════════════════════════════════════════ -->
 <section class="slide">
-    <span class="slide-number">08</span>
+    <span class="slide-number">09</span>
     <h2>Próximos Passos</h2>
 
     <div class="flow-steps">
