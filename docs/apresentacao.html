@@ -204,6 +204,11 @@
         code {
             font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
         }
+        .code-line {
+            display: block;
+            min-height: 1em;
+            white-space: pre;
+        }
 
         /* ── Syntax Highlighting ── */
         .kw { color: #569CD6; }           /* keyword */
@@ -973,6 +978,36 @@ GET /search/address/json?query=Av. Paulista
         </div>
     </div>
 </section>
+
+<script>
+    document.querySelectorAll('pre').forEach((block) => {
+        const lines = block.innerHTML
+            .replace(/\r/g, '')
+            .split('\n');
+
+        while (lines[0]?.trim() === '') {
+            lines.shift();
+        }
+
+        while (lines.at(-1)?.trim() === '') {
+            lines.pop();
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        lines.forEach((line) => {
+            const highlightedLine = line.match(/^<span class="hl">([\s\S]*)<\/span>$/);
+            const lineElement = document.createElement('span');
+
+            lineElement.className = highlightedLine ? 'code-line hl' : 'code-line';
+            lineElement.innerHTML = highlightedLine ? (highlightedLine[1] || '&nbsp;') : (line || '&nbsp;');
+
+            fragment.appendChild(lineElement);
+        });
+
+        block.replaceChildren(fragment);
+    });
+</script>
 
 </body>
 </html>

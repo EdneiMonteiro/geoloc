@@ -23,6 +23,40 @@ Prova de conceito que demonstra o uso do **Azure Maps** para validação de geol
 | [docs/componentes-azure.md](docs/componentes-azure.md) | Detalhes dos 4 recursos Azure |
 | [docs/apresentacao.html](docs/apresentacao.html) | Apresentação para cliente (abrir no browser) |
 
+## Referências Oficiais e Técnicas
+
+As referências abaixo cobrem a documentação oficial da Microsoft Learn e da referência REST usada por esta PoC, além de material técnico confiável para o algoritmo de distância.
+
+### Azure Maps na Microsoft Learn / Docs
+
+| Tema | Link | Aplicação nesta PoC |
+|------|------|---------------------|
+| Hub oficial do Azure Maps | https://learn.microsoft.com/en-us/azure/azure-maps/ | Porta de entrada para visão geral, how-to guides, referência REST, cobertura e exemplos. |
+| Visão geral do Azure Maps | https://learn.microsoft.com/en-us/azure/azure-maps/about-azure-maps | Contexto do produto e das capacidades geoespaciais suportadas. |
+| Search services: geocoding, fuzzy e reverse | https://learn.microsoft.com/en-us/azure/azure-maps/how-to-search-for-address | Explica como geocodificar endereços, usar Fuzzy Search e reverse geocoding. |
+| Referência REST: Get Search Address | https://learn.microsoft.com/en-us/rest/api/maps/search/get-search-address?view=rest-maps-1.0 | Documenta a operação exata usada no backend para converter endereço em latitude/longitude. |
+| Best practices do Search Service | https://learn.microsoft.com/en-us/azure/azure-maps/how-to-use-best-practices-for-search | Justifica parâmetros como `countrySet`, `language`, `limit` e a necessidade de URI encoding. |
+| Autenticação no Azure Maps | https://learn.microsoft.com/en-us/azure/azure-maps/azure-maps-authentication | Resume Shared Key, Microsoft Entra ID e SAS Token. |
+| Gerenciar autenticação no Azure Maps | https://learn.microsoft.com/en-us/azure/azure-maps/how-to-manage-authentication | Mostra como obter `clientId`, usar Managed Identity, RBAC e rotação de chaves. |
+| Idiomas suportados | https://learn.microsoft.com/en-us/azure/azure-maps/supported-languages | Referência útil para o uso de `language=pt-BR` nas chamadas de busca. |
+| Cobertura de geocodificação | https://learn.microsoft.com/en-us/azure/azure-maps/geocoding-coverage | Ajuda a validar expectativa de cobertura por país/região, incluindo o uso de `countrySet=BR`. |
+
+### Como essas referências se conectam com o código deste projeto
+
+- O backend usa a operação `Search Address` para transformar endereço textual em coordenadas geográficas.
+- Os parâmetros `countrySet=BR` e `language=pt-BR` seguem as recomendações de relevância e localização da documentação oficial.
+- O valor de `AzureMapsSubscriptionKey` implementa o fluxo de Shared Key desta PoC.
+- A alternativa recomendada para produção continua sendo `Managed Identity` + `x-ms-client-id` + `Authorization: Bearer {token}`.
+
+### Referências técnicas para o algoritmo de distância
+
+| Tema | Link | Observação |
+|------|------|------------|
+| Haversine formula | https://en.wikipedia.org/wiki/Haversine_formula | Boa referência conceitual para definição, derivação e limitações da fórmula em modelo esférico. |
+| Latitude/Longitude distance calculations | https://www.movable-type.co.uk/scripts/latlong.html | Referência prática e bastante usada para Haversine, lei dos cossenos esférica, precisão e exemplos de implementação. |
+
+Observação: esta PoC usa Haversine por simplicidade e por ser adequada para validação operacional de raio curto. Se a solução evoluir para requisitos geodésicos mais rigorosos, vale avaliar fórmulas elipsoidais mais precisas.
+
 ## Arquitetura
 
 ```
