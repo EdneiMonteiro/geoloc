@@ -982,7 +982,7 @@ GET /search/address/json?query=Av. Paulista
             const lineElement = document.createElement('span');
 
             lineElement.className = highlightedLine ? 'code-line hl' : 'code-line';
-            lineElement.innerHTML = highlightedLine ? (highlightedLine[1] || '&nbsp;') : (line || '&nbsp;');
+            lineElement.innerHTML = highlightedLine ? (highlightedLine[1] || '') : (line || '');
 
             fragment.appendChild(lineElement);
         });
