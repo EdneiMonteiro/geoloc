@@ -14,6 +14,8 @@ public class AzureMapsService
     private const string BaseUrl = "https://atlas.microsoft.com/search/address/json";
     private readonly HttpClient _httpClient;
     private readonly string _subscriptionKey;
+    private readonly string _countrySet;
+    private readonly string _language;
     private readonly ILogger<AzureMapsService> _logger;
 
     public AzureMapsService(HttpClient httpClient, IConfiguration configuration,
@@ -23,6 +25,8 @@ public class AzureMapsService
         _logger = logger;
         _subscriptionKey = configuration["AzureMapsSubscriptionKey"]
             ?? throw new InvalidOperationException("AzureMapsSubscriptionKey is not configured.");
+        _countrySet = configuration["AzureMapsCountrySet"] ?? "BR";
+        _language = configuration["AzureMapsLanguage"] ?? "pt-BR";
     }
 
     public async Task<GeoCoordinate?> GeocodeAddressAsync(string address)
@@ -30,7 +34,7 @@ public class AzureMapsService
         _logger.LogInformation("Geocoding address: {Address}", address);
 
         var encodedAddress = Uri.EscapeDataString(address);
-        var url = $"{BaseUrl}?api-version=1.0&subscription-key={_subscriptionKey}&query={encodedAddress}&countrySet=BR&language=pt-BR&limit=1";
+        var url = $"{BaseUrl}?api-version=1.0&subscription-key={_subscriptionKey}&query={encodedAddress}&countrySet={_countrySet}&language={_language}&limit=1";
 
         var response = await _httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();

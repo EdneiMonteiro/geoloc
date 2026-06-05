@@ -4,7 +4,9 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "TableStorageConnectionString": "UseDevelopmentStorage=true",
-    "AzureMapsSubscriptionKey": "<YOUR_AZURE_MAPS_KEY>"
+    "AzureMapsSubscriptionKey": "<YOUR_AZURE_MAPS_KEY>",
+    "AzureMapsCountrySet": "BR",
+    "AzureMapsLanguage": "pt-BR"
   },
   "Host": {
     "CORS": "*"
